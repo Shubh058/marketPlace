@@ -22,10 +22,11 @@ Route::get('/login', function () {
 // Public Discovery Endpoints
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
-Route::get('/seller-listings', [SellerListingController::class, 'index']);
 
 // Authenticated Route group
 Route::middleware('auth:sanctum')->group(function () {
+    // Seller Listings (now protected)
+    Route::get('/seller-listings', [SellerListingController::class, 'index']);
     
     // Global Auth Profiles
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -46,9 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- ADMIN ENDPOINTS ---
     Route::middleware('role.admin')->group(function () {
+            Route::put('/admin/sellers/{id}/ban', [AdminController::class, 'banSeller']);
+            Route::delete('/admin/sellers/{id}', [AdminController::class, 'removeSeller']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         Route::put('/seller-listings/{id}/status', [SellerListingController::class, 'updateStatus']);
+        Route::delete('/seller-listings/{id}', [SellerListingController::class, 'destroy']);
         
         // Admin Profile Dashboard and Audits
         Route::get('/admin/stats', [AdminController::class, 'dashboardStats']);

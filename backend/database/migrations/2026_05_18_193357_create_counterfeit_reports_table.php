@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('listing_id')->constrained('seller_listings')->onDelete('cascade');
             $table->text('reason');
+            $table->string('photo_proof')->nullable(); // path to uploaded photo
+            $table->string('video_proof')->nullable(); // path to uploaded video
             $table->string('status')->default('pending'); // pending, resolved
             $table->timestamps();
         });

@@ -11,6 +11,8 @@ class CounterfeitReport extends Model
         'listing_id',
         'reason',
         'status',
+        'photo_proof',
+        'video_proof',
     ];
 
     public function user()

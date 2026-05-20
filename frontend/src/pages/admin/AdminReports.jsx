@@ -5,6 +5,20 @@ const AdminReports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
+  const handleRemoveListing = async (listingId) => {
+    if (!window.confirm('Are you sure you want to permanently remove this listing?')) return;
+    setRemovingId(listingId);
+    try {
+      await API.delete(`/seller-listings/${listingId}`);
+      // Remove all reports for this listing from local state
+      setReports(prev => prev.filter(rep => rep.listing?.id !== listingId));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove listing.');
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchReports();
@@ -115,19 +129,29 @@ const AdminReports = () => {
                         )}
                       </td>
                       <td className="text-end">
-                        {rep.status === 'pending' ? (
+                        <div className="d-flex gap-2 justify-content-end">
+                          {rep.status === 'pending' ? (
+                            <button
+                              disabled={resolvingId === rep.id}
+                              onClick={() => handleResolve(rep.id)}
+                              className="btn btn-indigo btn-sm text-white d-flex align-items-center gap-1.5"
+                              style={{ background: 'var(--accent-primary)' }}
+                            >
+                              <i className="bi bi-check-lg"></i>
+                              <span>Mark Resolved</span>
+                            </button>
+                          ) : (
+                            <span className="text-secondary small">Closed</span>
+                          )}
                           <button
-                            disabled={resolvingId === rep.id}
-                            onClick={() => handleResolve(rep.id)}
-                            className="btn btn-indigo btn-sm text-white d-flex align-items-center gap-1.5 ms-auto"
-                            style={{ background: 'var(--accent-primary)' }}
+                            disabled={removingId === listing?.id}
+                            onClick={() => handleRemoveListing(listing?.id)}
+                            className="btn btn-danger btn-sm d-flex align-items-center gap-1.5"
                           >
-                            <i className="bi bi-check-lg"></i>
-                            <span>Mark Resolved</span>
+                            <i className="bi bi-trash"></i>
+                            <span>{removingId === listing?.id ? 'Removing...' : 'Remove Listing'}</span>
                           </button>
-                        ) : (
-                          <span className="text-secondary small">Closed</span>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );

@@ -30,7 +30,9 @@ class ReportController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'listing_id' => 'required|exists:seller_listings,id',
-            'reason' => 'required|string|min:10'
+            'reason' => 'required|string|min:10',
+            'photo_proof' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'video_proof' => 'nullable|file|mimes:mp4,avi,mov,webm|max:20480',
         ]);
 
         if ($validator->fails()) {
@@ -52,11 +54,37 @@ class ReportController extends Controller
             ], 409);
         }
 
+        $photoPath = null;
+        if ($request->hasFile('photo_proof')) {
+            $file = $request->file('photo_proof');
+            $fileName = time() . '_photo_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $destination = public_path('uploads/reports/photos');
+            if (!file_exists($destination)) {
+                mkdir($destination, 0755, true);
+            }
+            $file->move($destination, $fileName);
+            $photoPath = 'uploads/reports/photos/' . $fileName;
+        }
+
+        $videoPath = null;
+        if ($request->hasFile('video_proof')) {
+            $file = $request->file('video_proof');
+            $fileName = time() . '_video_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $destination = public_path('uploads/reports/videos');
+            if (!file_exists($destination)) {
+                mkdir($destination, 0755, true);
+            }
+            $file->move($destination, $fileName);
+            $videoPath = 'uploads/reports/videos/' . $fileName;
+        }
+
         $report = CounterfeitReport::create([
             'user_id' => $userId,
             'listing_id' => $request->listing_id,
             'reason' => $request->reason,
-            'status' => 'pending'
+            'status' => 'pending',
+            'photo_proof' => $photoPath,
+            'video_proof' => $videoPath,
         ]);
 
         return response()->json([

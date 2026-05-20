@@ -4,6 +4,32 @@ import API from '../../services/api';
 const ManageSellers = () => {
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actioningId, setActioningId] = useState(null);
+  const handleBanSeller = async (id) => {
+    if (!window.confirm('Are you sure you want to ban this seller?')) return;
+    setActioningId(id);
+    try {
+      await API.put(`/admin/sellers/${id}/ban`);
+      setSellers(prev => prev.map(s => s.id === id ? { ...s, status: 'banned' } : s));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to ban seller.');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleRemoveSeller = async (id) => {
+    if (!window.confirm('Are you sure you want to permanently remove this seller?')) return;
+    setActioningId(id);
+    try {
+      await API.delete(`/admin/sellers/${id}`);
+      setSellers(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove seller.');
+    } finally {
+      setActioningId(null);
+    }
+  };
 
   useEffect(() => {
     fetchSellers();
@@ -126,6 +152,22 @@ const ManageSellers = () => {
                       </td>
                       <td className="small text-secondary">
                         {new Date(seller.created_at).toLocaleDateString()}
+                        <div className="d-flex gap-2 mt-2">
+                          <button
+                            className="btn btn-warning btn-sm"
+                            disabled={actioningId === seller.id || seller.status === 'banned'}
+                            onClick={() => handleBanSeller(seller.id)}
+                          >
+                            {seller.status === 'banned' ? 'Banned' : 'Ban Seller'}
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            disabled={actioningId === seller.id}
+                            onClick={() => handleRemoveSeller(seller.id)}
+                          >
+                            Remove Seller
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

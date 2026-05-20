@@ -10,6 +10,17 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 
 class SellerListingController extends Controller
+    /**
+     * Delete a seller listing (Admin only)
+     */
+    public function destroy(Request $request, $id)
+    {
+        $listing = SellerListing::findOrFail($id);
+        $listing->delete();
+        return response()->json([
+            'message' => 'Listing deleted successfully.'
+        ]);
+    }
 {
     /**
      * Get a list of seller listings based on user role

@@ -17,6 +17,8 @@ const Marketplace = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportSuccess, setReportSuccess] = useState(null);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [photoProof, setPhotoProof] = useState(null);
+  const [videoProof, setVideoProof] = useState(null);
 
   const { user } = useAuth();
 
@@ -75,13 +77,20 @@ const Marketplace = () => {
     setReportSuccess(null);
 
     try {
-      const response = await API.post('/counterfeit-reports', {
-        listing_id: reportingListing.id,
-        reason: reportReason
+      const formData = new FormData();
+      formData.append('listing_id', reportingListing.id);
+      formData.append('reason', reportReason);
+      if (photoProof) formData.append('photo_proof', photoProof);
+      if (videoProof) formData.append('video_proof', videoProof);
+
+      const response = await API.post('/counterfeit-reports', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       setReportSuccess(response.data.message);
       // Automatically refresh catalog after report
       fetchListings();
+      setPhotoProof(null);
+      setVideoProof(null);
     } catch (err) {
       setReportSuccess(err.response?.data?.message || 'Failed to file counterfeit report.');
     } finally {
@@ -443,6 +452,24 @@ const Marketplace = () => {
                         ></textarea>
                       </div>
 
+                      <div className="mb-3">
+                        <label className="form-label text-secondary small fw-bold">PHOTO PROOF (OPTIONAL)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="form-control"
+                          onChange={e => setPhotoProof(e.target.files[0])}
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="form-label text-secondary small fw-bold">VIDEO PROOF (OPTIONAL)</label>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="form-control"
+                          onChange={e => setVideoProof(e.target.files[0])}
+                        />
+                      </div>
                       <button 
                         type="submit"
                         disabled={submittingReport || reportReason.length < 10}

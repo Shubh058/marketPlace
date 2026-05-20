@@ -11,6 +11,27 @@ use App\Models\VerificationLog;
 use App\Models\CounterfeitReport;
 
 class AdminController extends Controller
+
+    /**
+     * Ban a seller (set status to banned)
+     */
+    public function banSeller(Request $request, $id)
+    {
+        $seller = User::where('role', 'seller')->findOrFail($id);
+        $seller->status = 'banned';
+        $seller->save();
+        return response()->json(['message' => 'Seller banned successfully.']);
+    }
+
+    /**
+     * Remove a seller (delete account)
+     */
+    public function removeSeller(Request $request, $id)
+    {
+        $seller = User::where('role', 'seller')->findOrFail($id);
+        $seller->delete();
+        return response()->json(['message' => 'Seller removed successfully.']);
+    }
 {
     /**
      * Get aggregate statistics for the admin dashboard
