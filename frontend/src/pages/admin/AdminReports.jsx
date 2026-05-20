@@ -6,6 +6,10 @@ const AdminReports = () => {
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
+
+  const API_ORIGIN = 'http://127.0.0.1:8000';
+
   const handleRemoveListing = async (listingId) => {
     if (!window.confirm('Are you sure you want to permanently remove this listing?')) return;
     setRemovingId(listingId);
@@ -17,6 +21,31 @@ const AdminReports = () => {
       alert(err.response?.data?.message || 'Failed to remove listing.');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleRejectListing = async (report) => {
+    const listingId = report.listing?.id;
+    if (!listingId) return;
+    if (!window.confirm('Mark this product listing as rejected and close the complaint?')) return;
+
+    setRejectingId(report.id);
+    try {
+      await API.put(`/seller-listings/${listingId}/status`, { status: 'rejected' });
+      await API.put(`/admin/reports/${report.id}/status`, { status: 'resolved' });
+      setReports(prev => prev.map(rep =>
+        rep.id === report.id
+          ? {
+              ...rep,
+              status: 'resolved',
+              listing: rep.listing ? { ...rep.listing, verification_status: 'rejected' } : rep.listing,
+            }
+          : rep
+      ));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to reject listing.');
+    } finally {
+      setRejectingId(null);
     }
   };
 
@@ -86,6 +115,7 @@ const AdminReports = () => {
                   <th scope="col">Reported Listing Model</th>
                   <th scope="col">Offered By (Seller)</th>
                   <th scope="col" style={{ width: '30%' }}>Consumer Allegations / Reason</th>
+                  <th scope="col">Proof</th>
                   <th scope="col">Case Status</th>
                   <th scope="col" className="text-end">Actions</th>
                 </tr>
@@ -118,6 +148,35 @@ const AdminReports = () => {
                         </p>
                       </td>
                       <td>
+                        <div className="d-grid gap-2">
+                          {rep.photo_proof ? (
+                            <a
+                              href={`${API_ORIGIN}/${rep.photo_proof}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-1.5"
+                            >
+                              <i className="bi bi-image-fill text-info"></i>
+                              <span>Photo</span>
+                            </a>
+                          ) : null}
+                          {rep.video_proof ? (
+                            <a
+                              href={`${API_ORIGIN}/${rep.video_proof}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center gap-1.5"
+                            >
+                              <i className="bi bi-camera-video-fill text-warning"></i>
+                              <span>Video</span>
+                            </a>
+                          ) : null}
+                          {!rep.photo_proof && !rep.video_proof && (
+                            <span className="text-muted small">No proof attached</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
                         {rep.status === 'resolved' ? (
                           <span className="badge bg-success-subtle border border-success text-success px-3 py-1.5 rounded-pill fw-bold">
                             <i className="bi bi-check-circle-fill"></i> RESOLVED
@@ -131,15 +190,25 @@ const AdminReports = () => {
                       <td className="text-end">
                         <div className="d-flex gap-2 justify-content-end">
                           {rep.status === 'pending' ? (
-                            <button
-                              disabled={resolvingId === rep.id}
-                              onClick={() => handleResolve(rep.id)}
-                              className="btn btn-indigo btn-sm text-white d-flex align-items-center gap-1.5"
-                              style={{ background: 'var(--accent-primary)' }}
-                            >
-                              <i className="bi bi-check-lg"></i>
-                              <span>Mark Resolved</span>
-                            </button>
+                            <>
+                              <button
+                                disabled={rejectingId === rep.id || resolvingId === rep.id}
+                                onClick={() => handleRejectListing(rep)}
+                                className="btn btn-warning btn-sm text-dark d-flex align-items-center gap-1.5"
+                              >
+                                <i className="bi bi-shield-x"></i>
+                                <span>{rejectingId === rep.id ? 'Rejecting...' : 'Reject Listing'}</span>
+                              </button>
+                              <button
+                                disabled={resolvingId === rep.id || rejectingId === rep.id}
+                                onClick={() => handleResolve(rep.id)}
+                                className="btn btn-indigo btn-sm text-white d-flex align-items-center gap-1.5"
+                                style={{ background: 'var(--accent-primary)' }}
+                              >
+                                <i className="bi bi-check-lg"></i>
+                                <span>Mark Resolved</span>
+                              </button>
+                            </>
                           ) : (
                             <span className="text-secondary small">Closed</span>
                           )}

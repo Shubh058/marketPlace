@@ -11,7 +11,7 @@ use App\Models\VerificationLog;
 use App\Models\CounterfeitReport;
 
 class AdminController extends Controller
-
+{
     /**
      * Ban a seller (set status to banned)
      */
@@ -32,7 +32,7 @@ class AdminController extends Controller
         $seller->delete();
         return response()->json(['message' => 'Seller removed successfully.']);
     }
-{
+
     /**
      * Get aggregate statistics for the admin dashboard
      */

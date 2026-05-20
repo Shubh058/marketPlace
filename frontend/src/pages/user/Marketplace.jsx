@@ -16,6 +16,7 @@ const Marketplace = () => {
   const [reportingListing, setReportingListing] = useState(null);
   const [reportReason, setReportReason] = useState('');
   const [reportSuccess, setReportSuccess] = useState(null);
+  const [reportError, setReportError] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
   const [photoProof, setPhotoProof] = useState(null);
   const [videoProof, setVideoProof] = useState(null);
@@ -68,13 +69,24 @@ const Marketplace = () => {
     setReportingListing(listing);
     setReportReason('');
     setReportSuccess(null);
+    setReportError('');
+    setPhotoProof(null);
+    setVideoProof(null);
   };
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
-    if (!reportReason || reportReason.length < 10) return;
+    if (!reportReason || reportReason.length < 10) {
+      setReportError('Please explain the issue in at least 10 characters.');
+      return;
+    }
+    if (!photoProof && !videoProof) {
+      setReportError('Please upload proof before submitting: a product photo or a short video.');
+      return;
+    }
     setSubmittingReport(true);
     setReportSuccess(null);
+    setReportError('');
 
     try {
       const formData = new FormData();
@@ -92,7 +104,11 @@ const Marketplace = () => {
       setPhotoProof(null);
       setVideoProof(null);
     } catch (err) {
-      setReportSuccess(err.response?.data?.message || 'Failed to file counterfeit report.');
+      if (err.response?.data?.errors) {
+        setReportError(Object.values(err.response.data.errors).flat().join(' '));
+      } else {
+        setReportError(err.response?.data?.message || 'Failed to file counterfeit report.');
+      }
     } finally {
       setSubmittingReport(false);
     }
@@ -440,6 +456,13 @@ const Marketplace = () => {
 
                   {!reportSuccess ? (
                     <form onSubmit={handleReportSubmit}>
+                      {reportError && (
+                        <div className="alert alert-danger border-danger-subtle bg-danger-subtle text-danger p-3 rounded-3 mb-4 d-flex align-items-center gap-2">
+                          <i className="bi bi-exclamation-octagon-fill fs-5"></i>
+                          <div className="small">{reportError}</div>
+                        </div>
+                      )}
+
                       <div className="mb-4">
                         <label className="form-label text-secondary small fw-bold">EXPLAIN THE SUSPICIOUS DETAIL (MIN 10 CHARACTERS)</label>
                         <textarea 
@@ -453,26 +476,32 @@ const Marketplace = () => {
                       </div>
 
                       <div className="mb-3">
-                        <label className="form-label text-secondary small fw-bold">PHOTO PROOF (OPTIONAL)</label>
+                        <label className="form-label text-secondary small fw-bold">PHOTO PROOF</label>
                         <input
                           type="file"
                           accept="image/*"
-                          className="form-control"
-                          onChange={e => setPhotoProof(e.target.files[0])}
+                          className="form-control form-glass-input w-100"
+                          onChange={e => setPhotoProof(e.target.files[0] || null)}
                         />
+                        <div className="form-text text-muted small mt-1">
+                          Upload a clear photo of the product, label, invoice, packaging, or failed key proof.
+                        </div>
                       </div>
                       <div className="mb-4">
-                        <label className="form-label text-secondary small fw-bold">VIDEO PROOF (OPTIONAL)</label>
+                        <label className="form-label text-secondary small fw-bold">VIDEO PROOF</label>
                         <input
                           type="file"
                           accept="video/*"
-                          className="form-control"
-                          onChange={e => setVideoProof(e.target.files[0])}
+                          className="form-control form-glass-input w-100"
+                          onChange={e => setVideoProof(e.target.files[0] || null)}
                         />
+                        <div className="form-text text-muted small mt-1">
+                          At least one proof file is required. Videos can show product defects or verification failure.
+                        </div>
                       </div>
                       <button 
                         type="submit"
-                        disabled={submittingReport || reportReason.length < 10}
+                        disabled={submittingReport || reportReason.length < 10 || (!photoProof && !videoProof)}
                         className="btn btn-danger w-100 py-2.5 rounded-3 fw-bold text-white hover-glow d-flex align-items-center justify-content-center gap-2"
                         style={{ background: 'var(--danger)' }}
                       >

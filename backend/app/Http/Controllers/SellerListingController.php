@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 
 class SellerListingController extends Controller
+{
     /**
      * Delete a seller listing (Admin only)
      */
@@ -21,7 +22,7 @@ class SellerListingController extends Controller
             'message' => 'Listing deleted successfully.'
         ]);
     }
-{
+
     /**
      * Get a list of seller listings based on user role
      */

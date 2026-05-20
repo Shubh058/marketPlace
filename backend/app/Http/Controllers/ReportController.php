@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\CounterfeitReport;
 use App\Models\SellerListing;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\File;
 
 class ReportController extends Controller
 {
@@ -31,8 +32,11 @@ class ReportController extends Controller
         $validator = Validator::make($request->all(), [
             'listing_id' => 'required|exists:seller_listings,id',
             'reason' => 'required|string|min:10',
-            'photo_proof' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'video_proof' => 'nullable|file|mimes:mp4,avi,mov,webm|max:20480',
+            'photo_proof' => 'required_without:video_proof|nullable|file|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'video_proof' => 'required_without:photo_proof|nullable|file|mimes:mp4,avi,mov,webm|max:20480',
+        ], [
+            'photo_proof.required_without' => 'Please upload at least one proof file: a product photo or a video.',
+            'video_proof.required_without' => 'Please upload at least one proof file: a product photo or a video.',
         ]);
 
         if ($validator->fails()) {
@@ -59,8 +63,8 @@ class ReportController extends Controller
             $file = $request->file('photo_proof');
             $fileName = time() . '_photo_' . uniqid() . '.' . $file->getClientOriginalExtension();
             $destination = public_path('uploads/reports/photos');
-            if (!file_exists($destination)) {
-                mkdir($destination, 0755, true);
+            if (!File::exists($destination)) {
+                File::makeDirectory($destination, 0755, true);
             }
             $file->move($destination, $fileName);
             $photoPath = 'uploads/reports/photos/' . $fileName;
@@ -71,8 +75,8 @@ class ReportController extends Controller
             $file = $request->file('video_proof');
             $fileName = time() . '_video_' . uniqid() . '.' . $file->getClientOriginalExtension();
             $destination = public_path('uploads/reports/videos');
-            if (!file_exists($destination)) {
-                mkdir($destination, 0755, true);
+            if (!File::exists($destination)) {
+                File::makeDirectory($destination, 0755, true);
             }
             $file->move($destination, $fileName);
             $videoPath = 'uploads/reports/videos/' . $fileName;
