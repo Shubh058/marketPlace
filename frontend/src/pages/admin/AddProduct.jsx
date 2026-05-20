@@ -5,6 +5,7 @@ import API from '../../services/api';
 const AddProduct = () => {
   const [productName, setProductName] = useState('');
   const [brand, setBrand] = useState('');
+  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [originalAuthKey, setOriginalAuthKey] = useState('');
   const [officialImage, setOfficialImage] = useState(null);
@@ -28,6 +29,7 @@ const AddProduct = () => {
     const formData = new FormData();
     formData.append('product_name', productName);
     formData.append('brand', brand);
+    formData.append('category', category);
     formData.append('description', description);
     formData.append('original_auth_key', originalAuthKey);
     if (officialImage) {
@@ -46,6 +48,7 @@ const AddProduct = () => {
       // Reset form
       setProductName('');
       setBrand('');
+      setCategory('');
       setDescription('');
       setOriginalAuthKey('');
       setOfficialImage(null);
@@ -111,6 +114,20 @@ const AddProduct = () => {
                   />
                 </div>
                 <div className="col-md-6">
+                  <label className="form-label text-secondary small fw-bold">PRODUCT CATEGORY</label>
+                  <input 
+                    type="text" 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="form-control form-glass-input w-100" 
+                    placeholder="e.g. Shoes"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="row mb-4">
+                <div className="col-md-6 mb-3 mb-md-0">
                   <label className="form-label text-secondary small fw-bold">PRODUCT MODEL NAME</label>
                   <input 
                     type="text" 

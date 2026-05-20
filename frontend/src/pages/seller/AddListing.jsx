@@ -4,6 +4,8 @@ import API from '../../services/api';
 
 const AddListing = () => {
   const [products, setProducts] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [sellerAuthKey, setSellerAuthKey] = useState('');
   const [price, setPrice] = useState('');
@@ -20,6 +22,63 @@ const AddListing = () => {
   useEffect(() => {
     fetchOriginalProducts();
   }, []);
+
+  useEffect(() => {
+    if (!products.length) {
+      return;
+    }
+
+    const uniqueBrands = Array.from(new Set(products.map((product) => product.brand).filter(Boolean))).sort();
+
+    if (!selectedBrand && uniqueBrands.length > 0) {
+      setSelectedBrand(uniqueBrands[0]);
+    }
+  }, [products, selectedBrand]);
+
+  useEffect(() => {
+    if (!selectedBrand || !products.length) {
+      setSelectedCategory('');
+      return;
+    }
+
+    const uniqueCategories = Array.from(
+      new Set(
+        products
+          .filter((product) => product.brand === selectedBrand)
+          .map((product) => product.category)
+          .filter(Boolean)
+      )
+    ).sort();
+
+    if (!uniqueCategories.length) {
+      setSelectedCategory('');
+      return;
+    }
+
+    if (!selectedCategory || !uniqueCategories.includes(selectedCategory)) {
+      setSelectedCategory(uniqueCategories[0]);
+    }
+  }, [products, selectedBrand, selectedCategory]);
+
+  useEffect(() => {
+    if (!selectedBrand || !selectedCategory) {
+      setSelectedProductId('');
+      return;
+    }
+
+    const matchingProducts = products.filter(
+      (product) => product.brand === selectedBrand && product.category === selectedCategory
+    );
+
+    if (!matchingProducts.length) {
+      setSelectedProductId('');
+      return;
+    }
+
+    if (!matchingProducts.some((product) => String(product.id) === String(selectedProductId))) {
+      setSelectedProductId(String(matchingProducts[0].id));
+    }
+  }, [products, selectedBrand, selectedCategory, selectedProductId]);
 
   const fetchOriginalProducts = async () => {
     try {
@@ -50,7 +109,7 @@ const AddListing = () => {
     setSuccessMsg('');
 
     if (!selectedProductId) {
-      setErrorMsg('Please select a valid original product.');
+      setErrorMsg('Please select a valid brand, category, and product model.');
       return;
     }
     if (!invoiceFile) {
@@ -58,7 +117,7 @@ const AddListing = () => {
       return;
     }
     if (parseFloat(price) <= 0 || isNaN(parseFloat(price))) {
-      setErrorMsg('Please enter a valid price greater than $0.');
+      setErrorMsg('Please enter a valid price greater than ₹0.');
       return;
     }
 
@@ -142,20 +201,68 @@ const AddListing = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} encType="multipart/form-data">
-                
+
+                {/* Brand Select */}
+                <div className="mb-4">
+                  <label className="form-label text-secondary small fw-bold">SELECT BRAND</label>
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    className="form-select form-glass-input form-glass-select w-100"
+                    required
+                  >
+                    {Array.from(new Set(products.map((product) => product.brand).filter(Boolean))).sort().map((brand) => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Category Select */}
+                <div className="mb-4">
+                  <label className="form-label text-secondary small fw-bold">SELECT CATEGORY</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="form-select form-glass-input form-glass-select w-100"
+                    required
+                    disabled={!selectedBrand}
+                  >
+                    {Array.from(
+                      new Set(
+                        products
+                          .filter((product) => product.brand === selectedBrand)
+                          .map((product) => product.category)
+                          .filter(Boolean)
+                      )
+                    ).sort().map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Product Model Select */}
                 <div className="mb-4">
-                  <label className="form-label text-secondary small fw-bold">SELECT MANUFACTURER PRODUCT MODEL</label>
+                  <label className="form-label text-secondary small fw-bold">SELECT PRODUCT MODEL</label>
                   <select 
                     value={selectedProductId}
                     onChange={(e) => setSelectedProductId(e.target.value)}
                     className="form-select form-glass-input form-glass-select w-100"
                     required
+                    disabled={!selectedCategory}
                   >
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>{p.brand} - {p.product_name}</option>
-                    ))}
+                    {products
+                      .filter((product) => product.brand === selectedBrand && product.category === selectedCategory)
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.product_name}
+                        </option>
+                      ))}
                   </select>
+                  {selectedBrand && selectedCategory && (
+                    <div className="form-text text-muted small mt-1">
+                      Selected brand: {selectedBrand} | category: {selectedCategory}
+                    </div>
+                  )}
                 </div>
 
                 {/* Seller Auth Key */}
@@ -176,16 +283,22 @@ const AddListing = () => {
 
                 {/* Price */}
                 <div className="mb-4">
-                  <label className="form-label text-secondary small fw-bold">LISTING OFFER PRICE ($ USD)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="form-control form-glass-input w-100" 
-                    placeholder="e.g. 1099.99"
-                    required
-                  />
+                  <label className="form-label text-secondary small fw-bold">LISTING OFFER PRICE (INR ₹)</label>
+                  <div className="input-group">
+                    <span className="input-group-text bg-secondary border-secondary text-secondary fw-bold">₹</span>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="form-control form-glass-input w-100" 
+                      placeholder="e.g. 10999.00"
+                      required
+                    />
+                  </div>
+                  <div className="form-text text-muted small mt-1">
+                    Store the price in Indian Rupees. The backend keeps it as a numeric value.
+                  </div>
                 </div>
 
                 {/* Invoice File Upload */}
