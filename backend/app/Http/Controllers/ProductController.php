@@ -27,6 +27,7 @@ class ProductController extends Controller
         $validator = Validator::make($request->all(), [
             'product_name' => 'required|string|max:255',
             'brand' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
             'description' => 'required|string',
             'original_auth_key' => 'required|string|unique:products,original_auth_key',
             'official_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
@@ -55,6 +56,7 @@ class ProductController extends Controller
         $product = Product::create([
             'product_name' => $request->product_name,
             'brand' => $request->brand,
+            'category' => $request->category,
             'description' => $request->description,
             'original_auth_key' => $request->original_auth_key,
             'official_image' => $imagePath,

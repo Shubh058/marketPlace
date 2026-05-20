@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Prefill demo password to avoid typing repeatedly during development/demo
+  const [password, setPassword] = useState('password123');
   const [localError, setLocalError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
