@@ -14,10 +14,7 @@ const Sidebar = () => {
         <i className="bi bi-speedometer2"></i>
         <span>Stats Overview</span>
       </NavLink>
-      <NavLink to="/admin/add-product" className="nav-link">
-        <i className="bi bi-plus-circle"></i>
-        <span>Add Original Product</span>
-      </NavLink>
+      {/* Admin no longer creates original products here; sellers register manufacturer products. */}
       <NavLink to="/admin/listings" className="nav-link">
         <i className="bi bi-ui-checks"></i>
         <span>Manage Listings</span>

@@ -208,6 +208,8 @@ const Marketplace = () => {
           {filteredListings.map(listing => {
             const product = listing.product;
             const seller = listing.seller;
+            const displayName = product?.product_name || listing.product_name;
+            const displayBrand = product?.brand || listing.brand;
             
             // Calculate hypothetical trust rating based on our algorithm or default high score
             // In a fully built backend, trust scores are aggregated per seller
@@ -220,7 +222,7 @@ const Marketplace = () => {
                     {/* Top badging */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <span className="badge bg-secondary border border-secondary text-uppercase fw-bold text-secondary-emphasis" style={{ fontSize: '0.75rem' }}>
-                        {product?.brand}
+                        {displayBrand}
                       </span>
                       <span className="badge-original d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
                         <i className="bi bi-shield-fill-check"></i> ORIGINAL LISTING
@@ -228,24 +230,25 @@ const Marketplace = () => {
                     </div>
 
                     {/* Product visual details */}
-                    <div className="text-center py-3 bg-secondary-subtle rounded-3 mb-3 border border-secondary position-relative" style={{ minHeight: '140px', background: 'rgba(255,255,255,0.02)' }}>
-                      {listing.listing_image ? (
-                        <img 
-                          src={`http://127.0.0.1:8000/${listing.listing_image}`} 
-                          alt={product?.product_name}
-                          className="img-fluid rounded-2"
-                          style={{ maxHeight: '120px', objectFit: 'contain' }}
-                        />
-                      ) : (
-                        <div className="h-100 d-flex flex-column justify-content-center align-items-center text-muted">
-                          <i className="bi bi-image fs-1 opacity-25"></i>
-                          <span className="small opacity-50">Image Authenticated</span>
-                        </div>
-                      )}
+                    <div className="text-center mb-3">
+                      <div className="product-image-wrapper mb-2 border border-secondary">
+                        {listing.listing_image ? (
+                          <img
+                            src={`http://127.0.0.1:8000/${listing.listing_image}`}
+                            alt={displayName}
+                            className="rounded-2"
+                          />
+                        ) : (
+                          <div className="h-100 d-flex flex-column justify-content-center align-items-center text-muted" style={{ width: '100%' }}>
+                            <i className="bi bi-image fs-1 opacity-25"></i>
+                            <span className="small opacity-50">Image Authenticated</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <h5 className="fw-bold mb-2 text-light">{product?.product_name}</h5>
-                    <p className="text-secondary small line-clamp-3 mb-3" style={{ height: '54px', overflow: 'hidden' }}>{product?.description}</p>
+                    <h5 className="fw-bold mb-2 text-light">{displayName}</h5>
+                    <p className="text-secondary small line-clamp-3 mb-3" style={{ height: '54px', overflow: 'hidden' }}>{product?.description || listing.description}</p>
                     
                     {/* Price & Merchant details */}
                     <div className="border-top border-secondary pt-3 mb-3">

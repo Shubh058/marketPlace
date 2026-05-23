@@ -283,3 +283,34 @@ h1, h2, h3, h4, h5, h6 {
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
 }
+
+/* Product image helper - e-commerce style */
+.product-image-wrapper {
+  width: 100%;
+  aspect-ratio: 4 / 3; /* landscape box; adjusts automatically */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+}
+
+.product-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* crop to fill, like e-commerce */
+  object-position: center center;
+  transition: transform 220ms ease, filter 220ms ease;
+  display: block;
+}
+
+.product-image-wrapper img:hover {
+  transform: scale(1.04);
+}
+
+/* Smaller screens use square thumbnails */
+@media (max-width: 576px) {
+  .product-image-wrapper { aspect-ratio: 1 / 1; }
+}
+

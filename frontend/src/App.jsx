@@ -17,7 +17,6 @@ import AddListing from './pages/seller/AddListing';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AddProduct from './pages/admin/AddProduct';
 import ManageListings from './pages/admin/ManageListings';
 import ManageSellers from './pages/admin/ManageSellers';
 import AdminReports from './pages/admin/AdminReports';
@@ -116,6 +115,7 @@ function AppContent() {
             </RoleRoute>
           </ProtectedRoute>
         } />
+        {/* Seller manufacturer product creation removed per product flow changes */}
 
         {/* --- Admin Protected Routes --- */}
         <Route path="/admin" element={
@@ -127,15 +127,7 @@ function AppContent() {
             </RoleRoute>
           </ProtectedRoute>
         } />
-        <Route path="/admin/add-product" element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={['admin']}>
-              <Layout>
-                <AddProduct />
-              </Layout>
-            </RoleRoute>
-          </ProtectedRoute>
-        } />
+        {/* Admin product creation moved to seller panel; admin manages listings and approvals only. */}
         <Route path="/admin/listings" element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={['admin']}>

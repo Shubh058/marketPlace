@@ -24,10 +24,9 @@ const ManageListings = () => {
   const handleStatusUpdate = async (id, status) => {
     setActioningId(id);
     try {
-      await API.put(`/seller-listings/${id}/status`, { status });
-      // Update local state smoothly
+      const response = await API.put(`/seller-listings/${id}/status`, { status });
       setListings(prev => prev.map(item => 
-        item.id === id ? { ...item, verification_status: status } : item
+        item.id === id ? response.data.listing : item
       ));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update listing status.');
@@ -80,9 +79,10 @@ const ManageListings = () => {
                 {listings.map((list) => {
                   const product = list.product;
                   const seller = list.seller;
-                  
-                  // Verification key matching logic
-                  const keysMatch = list.seller_auth_key === product?.original_auth_key;
+
+                  const displayName = product?.product_name || list.product_name;
+                  const displayBrand = product?.brand || list.brand;
+                  const productKey = product?.original_auth_key;
 
                   return (
                     <tr key={list.id}>
@@ -92,30 +92,25 @@ const ManageListings = () => {
                         <div className="text-secondary" style={{ fontSize: '0.8rem' }}>{seller?.email}</div>
                       </td>
                       <td>
-                        <div className="fw-bold text-light">{product?.product_name}</div>
-                        <div className="text-secondary" style={{ fontSize: '0.8rem' }}>Brand: {product?.brand}</div>
+                        <div className="fw-bold text-light">{displayName}</div>
+                        <div className="text-secondary" style={{ fontSize: '0.8rem' }}>Brand: {displayBrand}</div>
                       </td>
                       <td>
                         <div className="d-flex flex-column gap-1">
                           <div>
-                            <span className="text-secondary" style={{ fontSize: '0.75rem' }}>Seller: </span>
+                            <span className="text-secondary" style={{ fontSize: '0.75rem' }}>Submitted: </span>
                             <code className="text-indigo bg-dark border border-secondary px-1.5 py-0.5 rounded">{list.seller_auth_key}</code>
                           </div>
-                          <div>
-                            <span className="text-secondary" style={{ fontSize: '0.75rem' }}>Admin: </span>
-                            <code className="text-success bg-dark border border-secondary px-1.5 py-0.5 rounded">{product?.original_auth_key}</code>
-                          </div>
-                          <div className="mt-1">
-                            {keysMatch ? (
-                              <span className="badge bg-success-subtle border border-success text-success px-2 py-0.5 rounded-pill fw-bold" style={{ fontSize: '0.65rem' }}>
-                                <i className="bi bi-shield-fill-check"></i> KEY MATCHED (VALID)
-                              </span>
-                            ) : (
-                              <span className="badge bg-danger-subtle border border-danger text-danger px-2 py-0.5 rounded-pill fw-bold" style={{ fontSize: '0.65rem' }}>
-                                <i className="bi bi-shield-fill-x"></i> MISMATCH (DUPLICATE)
-                              </span>
-                            )}
-                          </div>
+                          {productKey ? (
+                            <div>
+                              <span className="text-secondary" style={{ fontSize: '0.75rem' }}>Master: </span>
+                              <code className="text-success bg-dark border border-secondary px-1.5 py-0.5 rounded">{productKey}</code>
+                            </div>
+                          ) : (
+                            <span className="badge bg-warning-subtle border border-warning text-warning px-2 py-0.5 rounded-pill fw-bold" style={{ fontSize: '0.65rem' }}>
+                              <i className="bi bi-hourglass-split"></i> PENDING PRODUCT CREATION
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>

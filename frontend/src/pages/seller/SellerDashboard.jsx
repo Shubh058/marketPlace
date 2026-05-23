@@ -134,12 +134,14 @@ const SellerDashboard = () => {
               <tbody>
                 {listings.map((list) => {
                   const product = list.product;
+                  const displayName = product?.product_name || list.product_name;
+                  const displayBrand = product?.brand || list.brand;
                   return (
                     <tr key={list.id}>
                       <td className="text-secondary fw-bold">#{list.id}</td>
                       <td>
-                        <div className="fw-bold text-light">{product?.product_name || 'Deleted Product'}</div>
-                        <div className="text-secondary small">Brand: {product?.brand}</div>
+                        <div className="fw-bold text-light">{displayName || 'Pending Product'}</div>
+                        <div className="text-secondary small">Brand: {displayBrand || 'Pending'}</div>
                       </td>
                       <td className="fw-bold text-indigo" style={{ color: '#818cf8' }}>
                         ${parseFloat(list.price).toFixed(2)}

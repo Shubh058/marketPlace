@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('seller1@example.com');
   // Prefill demo password to avoid typing repeatedly during development/demo
   const [password, setPassword] = useState('password123');
   const [localError, setLocalError] = useState('');

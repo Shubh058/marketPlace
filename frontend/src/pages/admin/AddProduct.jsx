@@ -8,6 +8,7 @@ const AddProduct = () => {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [originalAuthKey, setOriginalAuthKey] = useState('');
+  // Admin no longer uploads official representative photo here; sellers provide it when listing.
   const [officialImage, setOfficialImage] = useState(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,6 +18,7 @@ const AddProduct = () => {
   const navigate = useNavigate();
 
   const handleImageChange = (e) => {
+    // keep handler for backward compatibility, but the field is removed from the form below
     setOfficialImage(e.target.files[0]);
   };
 
@@ -167,15 +169,7 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="form-label text-secondary small fw-bold">OFFICIAL REPRESENTATIVE PHOTO (OPTIONAL)</label>
-                <input 
-                  type="file" 
-                  onChange={handleImageChange}
-                  className="form-control form-glass-input w-100" 
-                  accept="image/*"
-                />
-              </div>
+              {/* Official representative photo moved to seller listing form per product flow. */}
 
               {/* Actions */}
               <div className="d-flex gap-3 mt-5">
