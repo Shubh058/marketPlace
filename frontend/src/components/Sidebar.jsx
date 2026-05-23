@@ -1,12 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 const Sidebar = () => {
   const { user } = useAuth();
-
   if (!user) return null;
-
   const renderAdminLinks = () => (
     <>
       <div className="text-muted small uppercase fw-bold mb-3 px-3">ADMIN COMMAND</div>
@@ -33,7 +30,6 @@ const Sidebar = () => {
       </NavLink>
     </>
   );
-
   const renderSellerLinks = () => (
     <>
       <div className="text-muted small uppercase fw-bold mb-3 px-3">MERCHANT COMMAND</div>
@@ -47,7 +43,6 @@ const Sidebar = () => {
       </NavLink>
     </>
   );
-
   const renderUserLinks = () => (
     <>
       <div className="text-muted small uppercase fw-bold mb-3 px-3">CUSTOMER ACTIONS</div>
@@ -61,7 +56,6 @@ const Sidebar = () => {
       </NavLink>
     </>
   );
-
   return (
     <div className="sidebar-nav d-none d-lg-block">
       <div className="d-flex flex-column h-100 justify-content-between">
@@ -70,7 +64,6 @@ const Sidebar = () => {
           {user.role === 'seller' && renderSellerLinks()}
           {user.role === 'user' && renderUserLinks()}
         </div>
-        
         <div className="px-3 py-2 border-top border-secondary mt-auto">
           <div className="d-flex align-items-center gap-2">
             <div className="bg-indigo-subtle rounded-circle p-2 text-indigo d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
