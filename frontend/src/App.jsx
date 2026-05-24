@@ -23,9 +23,9 @@ import AdminReports from './pages/admin/AdminReports';
 import VerificationLogs from './pages/admin/VerificationLogs';
 
 // CSS Imports
-import './index.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import './index.css';
 
 // Protected Route Wrapper (Ensures user is logged in)
 const ProtectedRoute = ({ children }) => {

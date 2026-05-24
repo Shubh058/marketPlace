@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const UserDashboard = () => {
   const [logs, setLogs] = useState([]);
@@ -25,21 +26,42 @@ const UserDashboard = () => {
   const totalChecks = logs.length;
   const originalMatches = logs.filter(l => l.result === 'original').length;
   const counterfeitMatches = logs.filter(l => l.result === 'duplicate').length;
+  const trustScore = totalChecks === 0 ? 100 : Math.max(35, 100 - counterfeitMatches * 18);
 
   return (
-    <div className="container-fluid">
-      
-      {/* Title Header */}
-      <div className="mb-4">
-        <h2 className="fw-bold">My Verification Dashboard</h2>
-        <p className="text-secondary small">Review your safety audit score and purchase check history</p>
+    <div className="container-fluid user-dashboard-shell">
+      <div className="user-hero glass-panel p-4 p-lg-5 mb-4 mb-lg-5 overflow-hidden position-relative">
+        <div className="row align-items-center g-4 position-relative">
+          <div className="col-lg-7">
+            <div className="user-hero-badge mb-3 d-inline-flex align-items-center gap-2">
+              <i className="bi bi-person-badge-fill"></i>
+              <span>Customer Account</span>
+            </div>
+            <div className="hero-copy-panel p-4 p-lg-5 mb-4">
+              <h2 className="display-5 fw-bold mb-3 user-hero-title">Hello, {user?.name || 'Customer'}</h2>
+              <p className="lead user-hero-subtitle mb-0" style={{ maxWidth: '760px' }}>
+                Track authenticity checks, review counterfeit activity, and keep your marketplace profile ready for verified purchases.
+              </p>
+            </div>
+            <div className="d-flex flex-wrap gap-3 align-items-center">
+              <Link to="/" className="btn btn-sm user-hero-button px-3 py-2 rounded-pill fw-bold">
+                <i className="bi bi-shop me-1"></i>
+                Browse Marketplace
+              </Link>
+              <span className="user-hero-note d-inline-flex align-items-center gap-2">
+                <i className="bi bi-shield-fill-check"></i>
+                Verified customer access is active
+              </span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      {/* Aggregate Score Cards */}
       <div className="row g-4 mb-5">
         <div className="col-md-4">
-          <div className="glass-panel p-4 border-secondary d-flex align-items-center gap-3">
-            <div className="bg-indigo-subtle rounded-3 p-3 text-indigo d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+          <div className="user-stat-card user-stat-total glass-panel p-4 border-secondary d-flex align-items-center gap-3 h-100">
+            <div className="user-stat-icon user-stat-icon-total d-flex align-items-center justify-content-center">
               <i className="bi bi-shield-check fs-2"></i>
             </div>
             <div>
@@ -50,8 +72,8 @@ const UserDashboard = () => {
         </div>
 
         <div className="col-md-4">
-          <div className="glass-panel p-4 border-secondary d-flex align-items-center gap-3">
-            <div className="bg-success-subtle rounded-3 p-3 text-success d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+          <div className="user-stat-card user-stat-safe glass-panel p-4 border-secondary d-flex align-items-center gap-3 h-100">
+            <div className="user-stat-icon user-stat-icon-safe d-flex align-items-center justify-content-center">
               <i className="bi bi-patch-check-fill fs-2"></i>
             </div>
             <div>
@@ -62,8 +84,8 @@ const UserDashboard = () => {
         </div>
 
         <div className="col-md-4">
-          <div className="glass-panel p-4 border-secondary d-flex align-items-center gap-3">
-            <div className="bg-danger-subtle rounded-3 p-3 text-danger d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
+          <div className="user-stat-card user-stat-alert glass-panel p-4 border-secondary d-flex align-items-center gap-3 h-100">
+            <div className="user-stat-icon user-stat-icon-alert d-flex align-items-center justify-content-center">
               <i className="bi bi-shield-fill-x fs-2"></i>
             </div>
             <div>
@@ -74,12 +96,20 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      {/* Verification History Table */}
-      <div className="glass-panel p-4 border-secondary">
-        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
-          <i className="bi bi-clock-history text-indigo" style={{ color: 'var(--accent-primary)' }}></i>
-          <span>Verification Audit Trail</span>
-        </h5>
+      <div className="glass-panel user-history-panel p-4 border-secondary">
+        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h5 className="fw-bold mb-2 d-flex align-items-center gap-2">
+              <i className="bi bi-clock-history text-indigo" style={{ color: 'var(--accent-primary)' }}></i>
+              <span>Verification Audit Trail</span>
+            </h5>
+            <p className="text-secondary small mb-0">Your checks are logged here with original or counterfeit results.</p>
+          </div>
+          <div className="user-history-chip">
+            <i className="bi bi-lightning-charge-fill"></i>
+            Active account overview
+          </div>
+        </div>
 
         {loading ? (
           <div className="text-center py-4">
@@ -94,7 +124,7 @@ const UserDashboard = () => {
           </div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-dark table-glass">
+            <table className="table table-glass user-history-table">
               <thead>
                 <tr>
                   <th scope="col">ID</th>

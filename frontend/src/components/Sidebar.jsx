@@ -1,8 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 const Sidebar = () => {
   const { user } = useAuth();
+  const [addressDraft, setAddressDraft] = useState('');
+  const [phoneDraft, setPhoneDraft] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
+  const [showContactPanel, setShowContactPanel] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.role !== 'user') return;
+
+    const addressKey = `veritrust_address_${user.id}`;
+    const phoneKey = `veritrust_phone_${user.id}`;
+    setAddressDraft(localStorage.getItem(addressKey) || '');
+    setPhoneDraft(localStorage.getItem(phoneKey) || '');
+    setSaveStatus('');
+    setShowContactPanel(false);
+  }, [user]);
+
+  const handleSaveAddress = (e) => {
+    e.preventDefault();
+
+    if (!user || user.role !== 'user') return;
+
+    if (!addressDraft.trim()) {
+      setSaveStatus('Please enter a delivery address.');
+      return;
+    }
+
+    if (!phoneDraft.trim()) {
+      setSaveStatus('Please enter a phone number.');
+      return;
+    }
+
+    const addressKey = `veritrust_address_${user.id}`;
+    const phoneKey = `veritrust_phone_${user.id}`;
+    localStorage.setItem(addressKey, addressDraft.trim());
+    localStorage.setItem(phoneKey, phoneDraft.trim());
+    setSaveStatus('Delivery address and phone saved.');
+    setShowContactPanel(false);
+    window.dispatchEvent(new CustomEvent('veritrust-address-updated'));
+  };
+
   if (!user) return null;
   const renderAdminLinks = () => (
     <>
@@ -54,6 +94,56 @@ const Sidebar = () => {
         <i className="bi bi-clock-history"></i>
         <span>My Verifications</span>
       </NavLink>
+
+      <div className="mt-3 mx-3 rounded-4 border border-secondary overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+        <button
+          type="button"
+          onClick={() => setShowContactPanel((current) => !current)}
+          className="w-100 d-flex align-items-center justify-content-between px-3 py-3 border-0 text-start"
+          style={{ background: 'transparent', color: 'inherit' }}
+        >
+          <div>
+            <div className="small fw-bold text-light">Delivery Address</div>
+            <div className="text-secondary" style={{ fontSize: '0.78rem' }}>
+              Click to add address and phone
+            </div>
+          </div>
+          <i className={`bi ${showContactPanel ? 'bi-chevron-up' : 'bi-chevron-down'} text-indigo`} style={{ color: 'var(--accent-primary)' }}></i>
+        </button>
+
+        {showContactPanel && (
+          <div className="px-3 pb-3 pt-0">
+            <form onSubmit={handleSaveAddress} className="d-grid gap-2">
+              <textarea
+                value={addressDraft}
+                onChange={(e) => setAddressDraft(e.target.value)}
+                className="form-control form-glass-input"
+                rows="4"
+                placeholder="House no, street, city, state, pincode"
+                style={{ resize: 'none' }}
+              />
+              <input
+                type="tel"
+                value={phoneDraft}
+                onChange={(e) => setPhoneDraft(e.target.value)}
+                className="form-control form-glass-input"
+                placeholder="Phone number"
+              />
+              <button type="submit" className="btn btn-sm btn-indigo text-white" style={{ background: 'var(--accent-primary)' }}>
+                Save Address
+              </button>
+            </form>
+            <div className="text-secondary small mt-2" style={{ lineHeight: '1.4' }}>
+              Saved address is used for the delivered-order view on the storefront.
+            </div>
+            {saveStatus && (
+              <div className="small mt-2 fw-bold" style={{ color: saveStatus.includes('saved') ? '#34d399' : '#fbbf24' }}>
+                {saveStatus}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </>
   );
   return (

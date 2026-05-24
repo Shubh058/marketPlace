@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
+const PURCHASES_STORAGE_KEY = 'veritrust_purchases';
+
+const readStoredPurchases = () => {
+  try {
+    return JSON.parse(localStorage.getItem(PURCHASES_STORAGE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
 const Marketplace = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,6 +21,11 @@ const Marketplace = () => {
   const [enteredKey, setEnteredKey] = useState('');
   const [verifyResult, setVerifyResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [purchasedListings, setPurchasedListings] = useState({});
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [purchaseNotice, setPurchaseNotice] = useState('');
+  const [purchaseError, setPurchaseError] = useState('');
   
   // Counterfeit Report State
   const [reportingListing, setReportingListing] = useState(null);
@@ -27,6 +42,34 @@ const Marketplace = () => {
     fetchListings();
   }, []);
 
+  useEffect(() => {
+    const syncPurchasedState = () => {
+      setPurchasedListings(readStoredPurchases());
+    };
+
+    const syncAddressState = () => {
+      if (!user?.id) {
+        setShippingAddress('');
+        setPhoneNumber('');
+        return;
+      }
+
+      setShippingAddress(localStorage.getItem(`veritrust_address_${user.id}`) || '');
+      setPhoneNumber(localStorage.getItem(`veritrust_phone_${user.id}`) || '');
+    };
+
+    syncPurchasedState();
+    syncAddressState();
+
+    window.addEventListener('veritrust-address-updated', syncAddressState);
+    window.addEventListener('storage', syncPurchasedState);
+
+    return () => {
+      window.removeEventListener('veritrust-address-updated', syncAddressState);
+      window.removeEventListener('storage', syncPurchasedState);
+    };
+  }, [user?.id]);
+
   const fetchListings = async () => {
     try {
       const response = await API.get('/seller-listings');
@@ -42,6 +85,45 @@ const Marketplace = () => {
     setVerificationListing(listing);
     setEnteredKey('');
     setVerifyResult(null);
+  };
+
+  const handleBuyNow = (listing) => {
+    if (!user || user.role !== 'user') {
+      setPurchaseError('Please log in as a customer before placing an order.');
+      setPurchaseNotice('');
+      return;
+    }
+
+    if (!shippingAddress.trim()) {
+      setPurchaseError('Add a delivery address in the left sidebar before buying.');
+      setPurchaseNotice('');
+      return;
+    }
+
+    if (!phoneNumber.trim()) {
+      setPurchaseError('Add a phone number in the left sidebar before buying.');
+      setPurchaseNotice('');
+      return;
+    }
+
+    setPurchaseError('');
+    setPurchaseNotice('');
+
+    setPurchasedListings((current) => {
+      const next = {
+        ...current,
+        [listing.id]: {
+          purchasedAt: new Date().toISOString(),
+          deliveredAt: new Date().toISOString(),
+          status: 'delivered',
+        },
+      };
+
+      localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+
+    setPurchaseNotice(`Order delivered for ${listing.product?.product_name || listing.product_name}.`);
   };
 
   const handleVerifySubmit = async (e) => {
@@ -133,7 +215,7 @@ const Marketplace = () => {
         <div className="row align-items-center">
           <div className="col-lg-8">
             <h1 className="display-4 fw-extrabold mb-3">
-              Buy Original, <span className="gradient-text">Verify Instantly</span>
+              <span className="hero-title-strong">Buy Original</span>, <span className="gradient-text">Verify Instantly</span>
             </h1>
             <p className="lead text-secondary mb-4">
               A decentralized credential marketplace solving counterfeit fraud. Admin-approved merchants list authentic merchandise verified through manufacturer security keys.
@@ -155,6 +237,15 @@ const Marketplace = () => {
           </div>
         </div>
       </div>
+
+      {(purchaseError || purchaseNotice) && (
+        <div className={`alert ${purchaseError ? 'alert-danger' : 'alert-success'} border-0 mb-4`} role="alert">
+          <div className="fw-bold">{purchaseError || purchaseNotice}</div>
+          {!purchaseError && shippingAddress && (
+                <div className="small opacity-75 mt-1">Delivered to: {shippingAddress} | Phone: {phoneNumber}</div>
+          )}
+        </div>
+      )}
 
       {/* Control Filter Bar */}
       <div className="row g-3 mb-4">
@@ -210,6 +301,7 @@ const Marketplace = () => {
             const seller = listing.seller;
             const displayName = product?.product_name || listing.product_name;
             const displayBrand = product?.brand || listing.brand;
+            const purchaseState = purchasedListings[listing.id];
             
             // Calculate hypothetical trust rating based on our algorithm or default high score
             // In a fully built backend, trust scores are aggregated per seller
@@ -217,16 +309,25 @@ const Marketplace = () => {
 
             return (
               <div key={listing.id} className="col-md-6 col-lg-4">
-                <div className="glass-card h-100 d-flex flex-column justify-content-between p-4">
+                <div
+                  className="glass-card h-100 d-flex flex-column justify-content-between p-4"
+                  style={purchaseState ? { borderColor: 'rgba(34,197,94,0.7)', boxShadow: '0 0 0 1px rgba(34,197,94,0.25), 0 18px 60px rgba(34,197,94,0.12)' } : {}}
+                >
                   <div>
                     {/* Top badging */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <span className="badge bg-secondary border border-secondary text-uppercase fw-bold text-secondary-emphasis" style={{ fontSize: '0.75rem' }}>
                         {displayBrand}
                       </span>
-                      <span className="badge-original d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
-                        <i className="bi bi-shield-fill-check"></i> ORIGINAL LISTING
-                      </span>
+                      {purchaseState ? (
+                        <span className="badge bg-success-subtle border border-success text-success d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                          <i className="bi bi-truck"></i> ORDER DELIVERED
+                        </span>
+                      ) : (
+                        <span className="badge-original d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                          <i className="bi bi-shield-fill-check"></i> ORIGINAL LISTING
+                        </span>
+                      )}
                     </div>
 
                     {/* Product visual details */}
@@ -266,6 +367,23 @@ const Marketplace = () => {
                         </span>
                       </div>
                     </div>
+
+                    {purchaseState && (
+                      <div className="p-3 rounded-4 border border-success-subtle mb-3" style={{ background: 'rgba(16, 185, 129, 0.08)' }}>
+                        <div className="d-flex justify-content-between align-items-start gap-3">
+                          <div>
+                            <div className="fw-bold text-success d-flex align-items-center gap-2">
+                              <i className="bi bi-check-circle-fill"></i>
+                              Order Delivered
+                            </div>
+                            <div className="text-secondary small mt-1">Ship to: {shippingAddress}</div>
+                            <div className="text-secondary small">Contact: {phoneNumber}</div>
+                            <div className="text-secondary small">Delivered on: {new Date(purchaseState.deliveredAt).toLocaleString()}</div>
+                          </div>
+                          <i className="bi bi-box2-heart-fill text-success fs-3"></i>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -276,27 +394,52 @@ const Marketplace = () => {
                     </div>
 
                     <div className="d-grid gap-2">
-                      <button 
-                        onClick={() => handleVerifyOpen(listing)}
-                        className="btn btn-indigo text-white hover-glow d-flex align-items-center justify-content-center gap-2 py-2"
-                        data-bs-toggle="modal" 
-                        data-bs-target="#verifyModal"
-                        style={{ background: 'var(--accent-primary)' }}
-                      >
-                        <i className="bi bi-shield-fill-check"></i>
-                        <span>Verify Authenticity</span>
-                      </button>
-
-                      {user && user.role === 'user' && (
-                        <button 
-                          onClick={() => handleReportOpen(listing)}
-                          className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1.5"
-                          data-bs-toggle="modal" 
-                          data-bs-target="#reportModal"
+                      {!purchaseState ? (
+                        <button
+                          onClick={() => handleBuyNow(listing)}
+                          className="btn btn-dark text-white hover-glow d-flex align-items-center justify-content-center gap-2 py-2"
+                          style={{ background: 'linear-gradient(135deg, #16a34a, #0f766e)' }}
                         >
-                          <i className="bi bi-exclamation-triangle"></i>
-                          <span>Report Counterfeit</span>
+                          <i className="bi bi-bag-check-fill"></i>
+                          <span>Buy Now</span>
                         </button>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleVerifyOpen(listing)}
+                            className="btn btn-indigo text-white hover-glow d-flex align-items-center justify-content-center gap-2 py-2"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#verifyModal"
+                            style={{ background: 'var(--accent-primary)' }}
+                          >
+                            <i className="bi bi-shield-fill-check"></i>
+                            <span>Verify Authenticity</span>
+                          </button>
+
+                          {user && user.role === 'user' && (
+                            <button 
+                              onClick={() => handleReportOpen(listing)}
+                              className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1.5"
+                              data-bs-toggle="modal" 
+                              data-bs-target="#reportModal"
+                            >
+                              <i className="bi bi-exclamation-triangle"></i>
+                              <span>Report Counterfeit</span>
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {user && user.role === 'user' && !purchaseState && (
+                        <div className="text-secondary small text-center">
+                          Save your address and phone in the left sidebar, then buy to unlock verification and counterfeit reporting.
+                        </div>
+                      )}
+
+                      {!user && (
+                        <div className="text-secondary small text-center">
+                          Log in as a customer to buy, verify, and report.
+                        </div>
                       )}
                     </div>
                   </div>
@@ -333,7 +476,7 @@ const Marketplace = () => {
                     <form onSubmit={handleVerifySubmit}>
                       <div className="alert alert-secondary border-secondary bg-secondary-subtle p-3 rounded-3 mb-4 text-center small text-secondary">
                         <i className="bi bi-info-circle-fill text-indigo fs-5 mb-2 d-block" style={{ color: 'var(--accent-primary)' }}></i>
-                        Enter the unique security registration code printed on your product packaging or invoice to check against original database credentials.
+                        Enter the printed product key and match it against the master key stored by the admin.
                       </div>
 
                       <div className="mb-4">
@@ -394,6 +537,16 @@ const Marketplace = () => {
                             <span className="badge bg-danger-subtle border border-danger text-danger px-3 py-2 rounded-pill small mb-2">
                               Verification Key Mismatch
                             </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVerifyResult(null);
+                                setEnteredKey('');
+                              }}
+                              className="btn btn-outline-light btn-sm"
+                            >
+                              <i className="bi bi-pencil-square"></i> Re-type Key
+                            </button>
                             {user && user.role === 'user' && (
                               <button
                                 onClick={() => {
