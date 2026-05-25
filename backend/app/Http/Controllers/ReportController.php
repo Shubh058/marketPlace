@@ -17,7 +17,7 @@ class ReportController extends Controller
     public function index()
     {
         $reports = CounterfeitReport::with(['user', 'listing.product', 'listing.seller'])
-            ->orderByRaw("FIELD(status, 'pending', 'resolved')")
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'resolved' THEN 2 ELSE 3 END")
             ->orderBy('created_at', 'desc')
             ->get();
 

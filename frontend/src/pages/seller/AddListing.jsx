@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../../services/api';
 
 const AddListing = () => {
+  const [products, setProducts] = useState([]);
+  const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [brand, setBrand] = useState('');
   const [category, setCategory] = useState('');
@@ -18,6 +20,38 @@ const AddListing = () => {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await API.get('/products');
+        setProducts(response.data);
+      } catch (err) {
+        console.error('Error fetching products', err);
+        setErrorMsg('Failed to load registered products list.');
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const handleProductChange = (e) => {
+    const selectedId = e.target.value;
+    setProductId(selectedId);
+    if (selectedId) {
+      const selectedProduct = products.find(p => p.id === parseInt(selectedId));
+      if (selectedProduct) {
+        setProductName(selectedProduct.product_name);
+        setBrand(selectedProduct.brand);
+        setCategory(selectedProduct.category);
+        setDescription(selectedProduct.description);
+      }
+    } else {
+      setProductName('');
+      setBrand('');
+      setCategory('');
+      setDescription('');
+    }
+  };
+
   const handleInvoiceChange = (e) => setInvoiceFile(e.target.files[0]);
   const handleImageChange = (e) => setListingImage(e.target.files[0]);
 
@@ -26,8 +60,8 @@ const AddListing = () => {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!productName || !brand || !category || !description || !sellerAuthKey) {
-      setErrorMsg('Please complete the product name, brand, category, description, and manufacturer key fields.');
+    if (!productId || !sellerAuthKey) {
+      setErrorMsg('Please select a product and enter the manufacturer security key.');
       return;
     }
     if (!invoiceFile) {
@@ -41,10 +75,7 @@ const AddListing = () => {
 
     setIsSubmitting(true);
     const formData = new FormData();
-    formData.append('product_name', productName);
-    formData.append('brand', brand);
-    formData.append('category', category);
-    formData.append('description', description);
+    formData.append('product_id', productId);
     formData.append('seller_auth_key', sellerAuthKey);
     formData.append('price', price);
     formData.append('invoice_file', invoiceFile);
@@ -71,7 +102,7 @@ const AddListing = () => {
     <div className="container-fluid">
       <div className="mb-4">
         <h2 className="fw-bold">Submit Product for Approval</h2>
-        <p className="text-secondary small">Enter the product details and manufacturer key manually. Admin will publish the master product after approval.</p>
+        <p className="text-secondary small">Select a registered product and submit your unique listing credentials for verification.</p>
       </div>
 
       <div className="row">
@@ -93,15 +124,26 @@ const AddListing = () => {
             <form onSubmit={handleSubmit} encType="multipart/form-data">
 
               <div className="mb-4">
-                <label className="form-label text-secondary small fw-bold">PRODUCT MODEL NAME</label>
-                <input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  className="form-control form-glass-input w-100"
-                  placeholder="e.g. iPhone 15 Pro Max (Titanium, 256GB)"
+                <label className="form-label text-secondary small fw-bold">SELECT PRODUCT MODEL</label>
+                <select
+                  value={productId}
+                  onChange={handleProductChange}
+                  className="form-select form-glass-input w-100"
                   required
-                />
+                >
+                  <option value="">-- Choose a Product --</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.product_name} ({p.brand})
+                    </option>
+                  ))}
+                </select>
+                {products.length === 0 && (
+                  <div className="form-text text-warning small mt-1">
+                    <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                    No products registered by Admin yet. Please register products as Admin first.
+                  </div>
+                )}
               </div>
 
               <div className="row mb-4">
@@ -110,10 +152,10 @@ const AddListing = () => {
                   <input
                     type="text"
                     value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
                     className="form-control form-glass-input w-100"
-                    placeholder="e.g. Apple"
-                    required
+                    placeholder="Auto-populated"
+                    disabled
+                    readOnly
                   />
                 </div>
                 <div className="col-md-6">
@@ -121,10 +163,10 @@ const AddListing = () => {
                   <input
                     type="text"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
                     className="form-control form-glass-input w-100"
-                    placeholder="e.g. Phones"
-                    required
+                    placeholder="Auto-populated"
+                    disabled
+                    readOnly
                   />
                 </div>
               </div>
@@ -133,11 +175,11 @@ const AddListing = () => {
                 <label className="form-label text-secondary small fw-bold">PRODUCT DESCRIPTION</label>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                   className="form-control form-glass-input w-100"
                   rows="4"
-                  placeholder="Describe the item, packaging, and identifying details..."
-                  required
+                  placeholder="Auto-populated"
+                  disabled
+                  readOnly
                 ></textarea>
               </div>
 
@@ -151,7 +193,7 @@ const AddListing = () => {
                   placeholder="e.g. APPLE-IP15PM-XYZ890"
                   required
                 />
-                <div className="form-text text-muted small mt-1">Admin will store this key with the master product after approval.</div>
+                <div className="form-text text-muted small mt-1">Submit the verification key for your product listing. Admin will verify this against their records.</div>
               </div>
 
               <div className="mb-4">

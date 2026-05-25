@@ -34,7 +34,7 @@ class SellerListingController extends Controller
 
         if ($user && $user->role === 'admin') {
             // Admins see all listings (pending first)
-            $listings = $query->orderByRaw("FIELD(verification_status, 'pending', 'approved', 'rejected')")
+            $listings = $query->orderByRaw("CASE WHEN verification_status = 'pending' THEN 1 WHEN verification_status = 'approved' THEN 2 WHEN verification_status = 'rejected' THEN 3 ELSE 4 END")
                               ->orderBy('created_at', 'desc')->get();
         } else if ($user && $user->role === 'seller') {
             // Sellers see their own listings
