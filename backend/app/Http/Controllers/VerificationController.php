@@ -28,14 +28,17 @@ class VerificationController extends Controller
         $listing = SellerListing::with(['product', 'seller'])->findOrFail($listingId);
         $product = $listing->product;
 
-        // Match entered key with the admin's original auth key
-        $isOriginal = ($request->entered_key === $product->original_auth_key);
-        
-        // Also verify that the seller's listed auth key matches the original auth key
-        $isSellerKeyValid = ($listing->seller_auth_key === $product->original_auth_key);
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product record not found for this listing.'
+            ], 404);
+        }
 
-        // Ultimate verdict: The product is original ONLY if the entered key is correct AND the seller's key matches the original admin key
-        $finalVerdict = ($isOriginal && $isSellerKeyValid) ? 'original' : 'duplicate';
+        $enteredKey = strtoupper(trim($request->entered_key));
+        $storedKey = strtoupper(trim($product->original_auth_key ?? ''));
+
+        // The product is original only when the printed key matches the master database key.
+        $finalVerdict = hash_equals($storedKey, $enteredKey) ? 'original' : 'duplicate';
 
         // Log the verification attempt
         $log = VerificationLog::create([

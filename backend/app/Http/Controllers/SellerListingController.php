@@ -2,22 +2,59 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use App\Models\SellerListing;
 use App\Models\Product;
-use Illuminate\Support\Facades\Validator;
+use App\Models\SellerListing;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 
 class SellerListingController extends Controller
 {
     /**
-     * Delete a seller listing (Admin only)
+     * Delete a seller listing.
      */
     public function destroy(Request $request, $id)
     {
-        $listing = SellerListing::findOrFail($id);
-        $listing->delete();
+        $listing = SellerListing::with('product')->findOrFail($id);
+        $user = $request->user();
+
+        if ($user && $user->role === 'seller' && $listing->seller_id !== $user->id) {
+            return response()->json([
+                'message' => 'You can only delete your own listings.'
+            ], 403);
+        }
+
+        $product = $listing->product;
+        $productId = $listing->product_id;
+        $shouldDeleteProduct = $productId && !SellerListing::where('product_id', $productId)
+            ->where('id', '!=', $listing->id)
+            ->exists();
+
+        DB::transaction(function () use ($listing, $product, $shouldDeleteProduct) {
+            foreach ([$listing->invoice_file, $listing->listing_image] as $filePath) {
+                if ($filePath) {
+                    $fullPath = public_path($filePath);
+                    if (File::exists($fullPath)) {
+                        File::delete($fullPath);
+                    }
+                }
+            }
+
+            $listing->delete();
+
+            if ($shouldDeleteProduct && $product) {
+                if ($product->official_image) {
+                    $fullPath = public_path($product->official_image);
+                    if (File::exists($fullPath)) {
+                        File::delete($fullPath);
+                    }
+                }
+
+                $product->delete();
+            }
+        });
+
         return response()->json([
             'message' => 'Listing deleted successfully.'
         ]);
@@ -29,21 +66,20 @@ class SellerListingController extends Controller
     public function index(Request $request)
     {
         $query = SellerListing::with(['seller', 'product']);
-
         $user = $request->user();
 
         if ($user && $user->role === 'admin') {
-            // Admins see all listings (pending first)
             $listings = $query->orderByRaw("FIELD(verification_status, 'pending', 'approved', 'rejected')")
-                              ->orderBy('created_at', 'desc')->get();
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else if ($user && $user->role === 'seller') {
-            // Sellers see their own listings
             $listings = $query->where('seller_id', $user->id)
-                              ->orderBy('created_at', 'desc')->get();
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
-            // Customers/Public see only approved listings
             $listings = $query->where('verification_status', 'approved')
-                              ->orderBy('created_at', 'desc')->get();
+                ->orderBy('created_at', 'desc')
+                ->get();
         }
 
         return response()->json($listings);
@@ -55,8 +91,11 @@ class SellerListingController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'seller_auth_key' => 'required|string',
+            'product_name' => 'required|string|max:255',
+            'brand' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'description' => 'required|string',
+            'seller_auth_key' => 'required|string|max:255',
             'price' => 'required|numeric|min:0.01',
             'invoice_file' => 'required|file|mimes:pdf,jpeg,png,jpg|max:2048',
             'listing_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
@@ -70,7 +109,6 @@ class SellerListingController extends Controller
 
         $sellerId = $request->user()->id;
 
-        // Save invoice file
         $invoicePath = null;
         if ($request->hasFile('invoice_file')) {
             $file = $request->file('invoice_file');
@@ -83,7 +121,6 @@ class SellerListingController extends Controller
             $invoicePath = 'uploads/invoices/' . $fileName;
         }
 
-        // Save listing product image
         $imagePath = null;
         if ($request->hasFile('listing_image')) {
             $image = $request->file('listing_image');
@@ -98,16 +135,20 @@ class SellerListingController extends Controller
 
         $listing = SellerListing::create([
             'seller_id' => $sellerId,
-            'product_id' => $request->product_id,
-            'seller_auth_key' => $request->seller_auth_key,
+            'product_id' => null,
+            'product_name' => $request->product_name,
+            'brand' => $request->brand,
+            'category' => $request->category,
+            'description' => $request->description,
+            'seller_auth_key' => strtoupper(trim($request->seller_auth_key)),
             'invoice_file' => $invoicePath,
             'listing_image' => $imagePath,
-            'verification_status' => 'pending', // Always pending initially
+            'verification_status' => 'pending',
             'price' => $request->price,
         ]);
 
         return response()->json([
-            'message' => 'Product listing created successfully and sent to admin for verification review.',
+            'message' => 'Product submission created successfully and sent to admin for approval.',
             'listing' => $listing->load('product')
         ], 201);
     }
@@ -141,8 +182,26 @@ class SellerListingController extends Controller
         }
 
         $listing = SellerListing::findOrFail($id);
-        $listing->verification_status = $request->status;
-        $listing->save();
+
+        DB::transaction(function () use ($listing, $request) {
+            if ($request->status === 'approved' && $listing->product_id === null) {
+                $product = Product::updateOrCreate(
+                    ['original_auth_key' => $listing->seller_auth_key],
+                    [
+                        'product_name' => $listing->product_name,
+                        'brand' => $listing->brand,
+                        'category' => $listing->category,
+                        'description' => $listing->description,
+                        'official_image' => null,
+                    ]
+                );
+
+                $listing->product_id = $product->id;
+            }
+
+            $listing->verification_status = $request->status;
+            $listing->save();
+        });
 
         return response()->json([
             'message' => 'Listing status updated to: ' . $request->status,

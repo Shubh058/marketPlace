@@ -43,12 +43,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role.seller')->group(function () {
         Route::post('/seller-listings', [SellerListingController::class, 'store']);
         Route::get('/my-listings', [SellerListingController::class, 'myListings']);
+        Route::delete('/my-listings/{id}', [SellerListingController::class, 'destroy']);
     });
 
     // --- ADMIN ENDPOINTS ---
     Route::middleware('role.admin')->group(function () {
             Route::put('/admin/sellers/{id}/ban', [AdminController::class, 'banSeller']);
             Route::delete('/admin/sellers/{id}', [AdminController::class, 'removeSeller']);
+        // Admin creates and deletes master products
         Route::post('/products', [ProductController::class, 'store']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
         Route::put('/seller-listings/{id}/status', [SellerListingController::class, 'updateStatus']);

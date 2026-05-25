@@ -9,6 +9,10 @@ class SellerListing extends Model
     protected $fillable = [
         'seller_id',
         'product_id',
+        'product_name',
+        'brand',
+        'category',
+        'description',
         'seller_auth_key',
         'invoice_file',
         'listing_image',
