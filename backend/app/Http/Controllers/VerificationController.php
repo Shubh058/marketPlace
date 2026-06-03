@@ -67,4 +67,21 @@ class VerificationController extends Controller
 
         return response()->json($logs);
     }
+
+    /**
+     * Get verification logs for the authenticated seller's listings.
+     */
+    public function sellerHistory(Request $request)
+    {
+        $sellerId = $request->user()->id;
+
+        $logs = VerificationLog::with(['user', 'listing.product', 'listing.seller'])
+            ->whereHas('listing', function ($query) use ($sellerId) {
+                $query->where('seller_id', $sellerId);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($logs);
+    }
 }

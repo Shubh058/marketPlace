@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/seller-listings', [SellerListingController::class, 'store']);
         Route::get('/my-listings', [SellerListingController::class, 'myListings']);
         Route::delete('/my-listings/{id}', [SellerListingController::class, 'destroy']);
+        Route::get('/seller/verification-logs', [VerificationController::class, 'sellerHistory']);
     });
 
     // --- ADMIN ENDPOINTS ---
